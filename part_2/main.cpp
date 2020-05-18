@@ -55,10 +55,10 @@ DWORD WINAPI thread_routine(LPVOID lpParam)
             }
 
             running = false;
+
+            Sleep(1000 * (rand() % 3 + 1));
             CloseHandle(file);
 
-            printf("Thread %d done. Waiting before exit...\n", GetCurrentThreadId());
-            Sleep(1000 * (rand() % 3 + 1));
             printf("Thread %d ended its work.\n", GetCurrentThreadId());
 
             if (!ReleaseSemaphore(h_semaphore, 1, NULL)) {
@@ -77,13 +77,7 @@ int main()
     cout << "Enter number of threads: ";
     cin >> thread_count;
 
-    vector<HANDLE> v_h_thread; // threads handle vector
-    vector<DWORD> v_id_thread; // threads ID vector
-
-    for (size_t i = 0; i < thread_count; i++)
-    {
-        v_id_thread.push_back(NULL);
-    }
+    HANDLE *h_threads = new HANDLE[thread_count];
 
     h_semaphore = CreateSemaphore(
         NULL,		            // Pointer to a SECURITY_ATTRIBUTES structure
@@ -100,34 +94,32 @@ int main()
 
     for (size_t i = 0; i < thread_count; i++)
     {
-        v_h_thread.push_back(NULL);
-        v_h_thread[i] = CreateThread(
+        HANDLE thread = CreateThread(
             NULL,
             0,
             (LPTHREAD_START_ROUTINE)thread_routine,
             NULL,
-            0,
-            &v_id_thread[i]
+            NULL,
+            NULL
         );
 
         // Check the return value for success
-        if (v_h_thread[i] == NULL)
+        if (h_threads[i] == NULL)
         {
             failure_exit("CreateThread error\n");
         }
+
+        h_threads[i] = thread;
     }
 
-    WaitForMultipleObjects(thread_count, v_h_thread.data(), TRUE, INFINITE);
+    WaitForMultipleObjects(thread_count, h_threads, TRUE, INFINITE);
 
     for (size_t i = 0; i < thread_count; i++)
     {
-        CloseHandle(v_h_thread[i]);
+        CloseHandle(h_threads[i]);
     }
 
     CloseHandle(h_semaphore);
-
-    cin.get();
-    cin.get();
 
     return 0;
 }
